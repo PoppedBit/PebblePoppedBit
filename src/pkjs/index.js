@@ -15,12 +15,6 @@ var COLORS = {
   text: '#FFFFFF'          // White text
 };
 
-// Create main card for the watchface
-var mainCard = new UI.Card({
-  backgroundColor: COLORS.background,
-  scrollable: false
-});
-
 // Create a more elaborate UI window for better styling
 var wind = new UI.Window({
   fullscreen: true,
@@ -133,10 +127,5 @@ wind.on('show', function() {
 // Handle AppMessage events
 Pebble.addEventListener('ready', function(e) {
   console.log('Blood Angels Watchface ready!');
-  updateTime();
-});
-
-// Update on timezone change
-Pebble.addEventListener('tick', function(e) {
   updateTime();
 });

@@ -12,7 +12,7 @@ static void update_time() {
   struct tm *tick_time = localtime(&temp);
 
   // Write the current hours and minutes into a buffer
-  static char s_time_buffer[8];
+  static char s_time_buffer[16];
   strftime(s_time_buffer, sizeof(s_time_buffer), 
            clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
 
@@ -106,6 +106,9 @@ static void init() {
 }
 
 static void deinit() {
+  // Unsubscribe from tick timer service
+  tick_timer_service_unsubscribe();
+  
   // Destroy Window
   window_destroy(s_main_window);
 }
