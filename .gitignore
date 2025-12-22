@@ -1,0 +1,22 @@
+# Build artifacts
+build/
+.lock-waf*
+.waf*
+
+# Node modules (if any)
+node_modules/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Pebble specific
+*.pbw
+*.pbl
