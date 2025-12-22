@@ -1,0 +1,14 @@
+{
+  "uuid": "ba7a1e5d-4c3f-4b2a-9e1f-2d3c4b5a6789",
+  "shortName": "Blood Angels",
+  "longName": "Blood Angels Watchface",
+  "companyName": "Warhammer 40K Fans",
+  "versionLabel": "1.0.0",
+  "sdkVersion": "3",
+  "targetPlatforms": ["aplite", "basalt", "chalk", "diorite"],
+  "watchface": true,
+  "capabilities": [],
+  "resources": {
+    "media": []
+  }
+}

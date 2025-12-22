@@ -1,0 +1,23 @@
+{
+  "name": "blood-angels-watchface",
+  "version": "1.0.0",
+  "description": "A Warhammer 40K Blood Angels themed digital watch face for Pebble",
+  "keywords": ["pebble", "watchface", "warhammer", "blood-angels"],
+  "author": "Your Name",
+  "private": true,
+  "pebble": {
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite"
+    ],
+    "watchface": true,
+    "resources": {
+      "media": []
+    }
+  },
+  "dependencies": {}
+}

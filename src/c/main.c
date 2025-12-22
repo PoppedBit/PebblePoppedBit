@@ -1,0 +1,117 @@
+#include <pebble.h>
+
+static Window *s_main_window;
+static TextLayer *s_time_layer;
+static TextLayer *s_title_layer;
+static TextLayer *s_date_layer;
+static TextLayer *s_motto_layer;
+
+static void update_time() {
+  // Get a tm structure
+  time_t temp = time(NULL);
+  struct tm *tick_time = localtime(&temp);
+
+  // Write the current hours and minutes into a buffer
+  static char s_time_buffer[8];
+  strftime(s_time_buffer, sizeof(s_time_buffer), 
+           clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
+
+  // Display this time on the TextLayer
+  text_layer_set_text(s_time_layer, s_time_buffer);
+  
+  // Update date
+  static char s_date_buffer[16];
+  strftime(s_date_buffer, sizeof(s_date_buffer), "%a %b %d", tick_time);
+  text_layer_set_text(s_date_layer, s_date_buffer);
+}
+
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  update_time();
+}
+
+static void main_window_load(Window *window) {
+  // Get information about the Window
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_bounds(window_layer);
+
+  // Create the title TextLayer - "BLOOD ANGELS"
+  s_title_layer = text_layer_create(
+      GRect(0, 10, bounds.size.w, 30));
+  text_layer_set_background_color(s_title_layer, GColorBlack);
+  text_layer_set_text_color(s_title_layer, GColorRed);
+  text_layer_set_text(s_title_layer, "BLOOD ANGELS");
+  text_layer_set_font(s_title_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_text_alignment(s_title_layer, GTextAlignmentCenter);
+
+  // Create the time TextLayer
+  s_time_layer = text_layer_create(
+      GRect(0, 50, bounds.size.w, 60));
+  text_layer_set_background_color(s_time_layer, GColorBlack);
+  text_layer_set_text_color(s_time_layer, GColorWhite);
+  text_layer_set_text(s_time_layer, "00:00");
+  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
+  text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+
+  // Create the date TextLayer
+  s_date_layer = text_layer_create(
+      GRect(0, 115, bounds.size.w, 25));
+  text_layer_set_background_color(s_date_layer, GColorBlack);
+  text_layer_set_text_color(s_date_layer, GColorChromeYellow);
+  text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
+
+  // Create the motto TextLayer - "For Sanguinius!"
+  s_motto_layer = text_layer_create(
+      GRect(0, 145, bounds.size.w, 20));
+  text_layer_set_background_color(s_motto_layer, GColorBlack);
+  text_layer_set_text_color(s_motto_layer, GColorRed);
+  text_layer_set_text(s_motto_layer, "For Sanguinius!");
+  text_layer_set_font(s_motto_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_alignment(s_motto_layer, GTextAlignmentCenter);
+
+  // Add child layers to the Window's root layer
+  layer_add_child(window_layer, text_layer_get_layer(s_title_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_motto_layer));
+}
+
+static void main_window_unload(Window *window) {
+  // Destroy TextLayers
+  text_layer_destroy(s_time_layer);
+  text_layer_destroy(s_title_layer);
+  text_layer_destroy(s_date_layer);
+  text_layer_destroy(s_motto_layer);
+}
+
+static void init() {
+  // Create main Window element and assign to pointer
+  s_main_window = window_create();
+  window_set_background_color(s_main_window, GColorBlack);
+
+  // Set handlers to manage the elements inside the Window
+  window_set_window_handlers(s_main_window, (WindowHandlers) {
+    .load = main_window_load,
+    .unload = main_window_unload
+  });
+
+  // Show the Window on the watch, with animated=true
+  window_stack_push(s_main_window, true);
+
+  // Make sure the time is displayed from the start
+  update_time();
+
+  // Register with TickTimerService
+  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+}
+
+static void deinit() {
+  // Destroy Window
+  window_destroy(s_main_window);
+}
+
+int main(void) {
+  init();
+  app_event_loop();
+  deinit();
+}
