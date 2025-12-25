@@ -3,6 +3,7 @@
 static Window *s_main_window;
 static TextLayer *s_time_layer;
 static TextLayer *s_date_layer;
+static TextLayer *s_battery_layer; // NEW:  Battery text layer
 
 static void update_time()
 {
@@ -22,6 +23,14 @@ static void update_time()
     static char s_date_buffer[16];
     strftime(s_date_buffer, sizeof(s_date_buffer), "%a %b %d", tick_time);
     text_layer_set_text(s_date_layer, s_date_buffer);
+}
+
+// NEW: Battery update handler
+static void battery_callback(BatteryChargeState state)
+{
+    static char s_battery_buffer[8];
+    snprintf(s_battery_buffer, sizeof(s_battery_buffer), "%d%%", state.charge_percent);
+    text_layer_set_text(s_battery_layer, s_battery_buffer);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed)
@@ -52,9 +61,19 @@ static void main_window_load(Window *window)
     text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
     text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
 
+    // NEW: Create the battery TextLayer (top-right corner)
+    s_battery_layer = text_layer_create(
+        GRect(bounds.size.w - 50, 5, 45, 20));
+    text_layer_set_background_color(s_battery_layer, GColorBlack);
+    text_layer_set_text_color(s_battery_layer, GColorWhite);
+    text_layer_set_font(s_battery_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+    text_layer_set_text_alignment(s_battery_layer, GTextAlignmentRight);
+    text_layer_set_text(s_battery_layer, "100%");
+
     // Add child layers to the Window's root layer
     layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
     layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
+    layer_add_child(window_layer, text_layer_get_layer(s_battery_layer)); // NEW
 }
 
 static void main_window_unload(Window *window)
@@ -62,6 +81,7 @@ static void main_window_unload(Window *window)
     // Destroy TextLayers
     text_layer_destroy(s_time_layer);
     text_layer_destroy(s_date_layer);
+    text_layer_destroy(s_battery_layer); // NEW
 }
 
 static void init()
@@ -81,6 +101,10 @@ static void init()
     // Make sure the time is displayed from the start
     update_time();
 
+    // NEW: Subscribe to battery service and display initial battery level
+    battery_state_service_subscribe(battery_callback);
+    battery_callback(battery_state_service_peek());
+
     // Register with TickTimerService
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 }
@@ -89,6 +113,9 @@ static void deinit()
 {
     // Unsubscribe from tick timer service
     tick_timer_service_unsubscribe();
+
+    // NEW: Unsubscribe from battery service
+    battery_state_service_unsubscribe();
 
     // Destroy Window
     window_destroy(s_main_window);
