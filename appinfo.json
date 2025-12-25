@@ -15,5 +15,11 @@
   "watchapp": {
     "watchface": true
   },
+  "appKeys": {
+    "SUBSCRIBER_COUNT": 0
+  },
+  "capabilities": [
+    "configurable"
+  ],
   "projectType": "native"
 }

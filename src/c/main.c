@@ -1,9 +1,15 @@
 #include <pebble.h>
 
+// App message keys
+#define MESSAGE_KEY_SUBSCRIBER_COUNT 0
+
 static Window *s_main_window;
 static TextLayer *s_time_layer;
 static TextLayer *s_date_layer;
-static TextLayer *s_battery_layer; // NEW:  Battery text layer
+static TextLayer *s_battery_layer; // Battery text layer
+static TextLayer *s_subscriber_layer; // Subscriber count text layer
+
+static int s_subscriber_count = -1; // -1 indicates no data yet
 
 static void update_time()
 {
@@ -25,12 +31,65 @@ static void update_time()
     text_layer_set_text(s_date_layer, s_date_buffer);
 }
 
-// NEW: Battery update handler
+// Battery update handler
 static void battery_callback(BatteryChargeState state)
 {
     static char s_battery_buffer[8];
     snprintf(s_battery_buffer, sizeof(s_battery_buffer), "%d%%", state.charge_percent);
     text_layer_set_text(s_battery_layer, s_battery_buffer);
+}
+
+// Subscriber count update handler
+static void update_subscriber_display()
+{
+    static char s_subscriber_buffer[16];
+    
+    if (s_subscriber_count < 0) {
+        // No data or error
+        snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "---");
+    } else if (s_subscriber_count >= 1000000) {
+        // Display as M (millions)
+        snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "%.1fM", (double)s_subscriber_count / 1000000.0);
+    } else if (s_subscriber_count >= 1000) {
+        // Display as K (thousands)
+        snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "%.1fK", (double)s_subscriber_count / 1000.0);
+    } else {
+        // Display raw number
+        snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "%d", s_subscriber_count);
+    }
+    
+    text_layer_set_text(s_subscriber_layer, s_subscriber_buffer);
+}
+
+// AppMessage inbox received callback
+static void inbox_received_callback(DictionaryIterator *iterator, void *context)
+{
+    // Read subscriber count from the message
+    Tuple *subscriber_tuple = dict_find(iterator, MESSAGE_KEY_SUBSCRIBER_COUNT);
+    
+    if (subscriber_tuple) {
+        s_subscriber_count = (int)subscriber_tuple->value->int32;
+        APP_LOG(APP_LOG_LEVEL_INFO, "Received subscriber count: %d", s_subscriber_count);
+        update_subscriber_display();
+    }
+}
+
+// AppMessage inbox dropped callback
+static void inbox_dropped_callback(AppMessageResult reason, void *context)
+{
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped: %d", (int)reason);
+}
+
+// AppMessage outbox failed callback
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context)
+{
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed: %d", (int)reason);
+}
+
+// AppMessage outbox sent callback
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context)
+{
+    APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed)
@@ -61,19 +120,29 @@ static void main_window_load(Window *window)
     text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
     text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
 
-    // NEW: Create the battery TextLayer (top-right corner)
+    // Create the subscriber count TextLayer (top-left corner)
+    s_subscriber_layer = text_layer_create(
+        GRect(5, 5, 45, 20));
+    text_layer_set_background_color(s_subscriber_layer, GColorBlack);
+    text_layer_set_text_color(s_subscriber_layer, GColorWhite);
+    text_layer_set_font(s_subscriber_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    text_layer_set_text_alignment(s_subscriber_layer, GTextAlignmentLeft);
+    text_layer_set_text(s_subscriber_layer, "---");
+
+    // Create the battery TextLayer (top-right corner)
     s_battery_layer = text_layer_create(
         GRect(bounds.size.w - 50, 5, 45, 20));
     text_layer_set_background_color(s_battery_layer, GColorBlack);
     text_layer_set_text_color(s_battery_layer, GColorWhite);
-    text_layer_set_font(s_battery_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+    text_layer_set_font(s_battery_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
     text_layer_set_text_alignment(s_battery_layer, GTextAlignmentRight);
     text_layer_set_text(s_battery_layer, "100%");
 
     // Add child layers to the Window's root layer
     layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
     layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
-    layer_add_child(window_layer, text_layer_get_layer(s_battery_layer)); // NEW
+    layer_add_child(window_layer, text_layer_get_layer(s_battery_layer));
+    layer_add_child(window_layer, text_layer_get_layer(s_subscriber_layer));
 }
 
 static void main_window_unload(Window *window)
@@ -81,7 +150,8 @@ static void main_window_unload(Window *window)
     // Destroy TextLayers
     text_layer_destroy(s_time_layer);
     text_layer_destroy(s_date_layer);
-    text_layer_destroy(s_battery_layer); // NEW
+    text_layer_destroy(s_battery_layer);
+    text_layer_destroy(s_subscriber_layer);
 }
 
 static void init()
@@ -101,12 +171,26 @@ static void init()
     // Make sure the time is displayed from the start
     update_time();
 
-    // NEW: Subscribe to battery service and display initial battery level
+    // Subscribe to battery service and display initial battery level
     battery_state_service_subscribe(battery_callback);
     battery_callback(battery_state_service_peek());
 
     // Register with TickTimerService
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+
+    // Register AppMessage callbacks
+    app_message_register_inbox_received(inbox_received_callback);
+    app_message_register_inbox_dropped(inbox_dropped_callback);
+    app_message_register_outbox_failed(outbox_failed_callback);
+    app_message_register_outbox_sent(outbox_sent_callback);
+
+    // Open AppMessage
+    const int inbox_size = 128;
+    const int outbox_size = 128;
+    app_message_open(inbox_size, outbox_size);
+
+    // Initialize subscriber display
+    update_subscriber_display();
 }
 
 static void deinit()
@@ -114,7 +198,7 @@ static void deinit()
     // Unsubscribe from tick timer service
     tick_timer_service_unsubscribe();
 
-    // NEW: Unsubscribe from battery service
+    // Unsubscribe from battery service
     battery_state_service_unsubscribe();
 
     // Destroy Window
