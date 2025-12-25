@@ -57,3 +57,7 @@ The Blood Angels are one of the 20 First Founding Space Marine Chapters, created
 - Pebble Time (Basalt) - Color display
 - Pebble Time Round (Chalk) - Color, round display
 - Pebble 2 (Diorite) - Black & White
+- Pebble Time 2 (Emery) - Color display
+
+## Implementation
+This watchface is implemented entirely in JavaScript using PebbleJS, providing a pure JavaScript solution without requiring C code compilation. The implementation uses the Pebble UI framework to create text layers for displaying the chapter name, time, date, and motto with the appropriate Blood Angels color scheme.
