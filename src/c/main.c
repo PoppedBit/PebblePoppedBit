@@ -49,10 +49,10 @@ static void update_subscriber_display()
         snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "---");
     } else if (s_subscriber_count >= 1000000) {
         // Display as M (millions)
-        snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "%.1fM", s_subscriber_count / 1000000.0);
+        snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "%.1fM", (double)s_subscriber_count / 1000000.0);
     } else if (s_subscriber_count >= 1000) {
         // Display as K (thousands)
-        snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "%.1fK", s_subscriber_count / 1000.0);
+        snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "%.1fK", (double)s_subscriber_count / 1000.0);
     } else {
         // Display raw number
         snprintf(s_subscriber_buffer, sizeof(s_subscriber_buffer), "%d", s_subscriber_count);

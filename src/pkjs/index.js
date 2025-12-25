@@ -1,10 +1,15 @@
 // PebbleKit JS for YouTube Subscriber Count
 
-// S3 URL placeholder - user can update this
+// S3 URL placeholder - USER MUST UPDATE THIS before deploying
+// For production, consider using environment variables or a configuration mechanism
+// The placeholder URL is intentionally generic and must be replaced with your actual bucket URL
 var SUBSCRIBER_URL = 'https://YOUR-S3-BUCKET.s3.amazonaws.com/youtube-subscribers.json';
 
 // App message keys
 var MESSAGE_KEY_SUBSCRIBER_COUNT = 0;
+
+// Fetch interval: 15 minutes in milliseconds
+var FETCH_INTERVAL_MS = 900000;
 
 // Last known subscriber count
 var lastSubscriberCount = null;
@@ -88,10 +93,10 @@ Pebble.addEventListener('ready', function() {
   // Fetch subscriber count immediately when watch face is opened
   fetchSubscriberCount();
   
-  // Set up timer to fetch every 15 minutes (900000 ms)
+  // Set up timer to fetch every 15 minutes
   setInterval(function() {
     fetchSubscriberCount();
-  }, 900000);
+  }, FETCH_INTERVAL_MS);
 });
 
 // Listen for incoming AppMessages from watch (if needed in future)
