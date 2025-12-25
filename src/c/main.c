@@ -2,9 +2,7 @@
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
-static TextLayer *s_title_layer;
 static TextLayer *s_date_layer;
-static TextLayer *s_motto_layer;
 
 static void update_time()
 {
@@ -37,15 +35,6 @@ static void main_window_load(Window *window)
     Layer *window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
 
-    // Create the title TextLayer - "BLOOD ANGELS"
-    s_title_layer = text_layer_create(
-        GRect(0, 10, bounds.size.w, 30));
-    text_layer_set_background_color(s_title_layer, GColorBlack);
-    text_layer_set_text_color(s_title_layer, GColorRed);
-    text_layer_set_text(s_title_layer, "Hello, Commander");
-    text_layer_set_font(s_title_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-    text_layer_set_text_alignment(s_title_layer, GTextAlignmentCenter);
-
     // Create the time TextLayer
     s_time_layer = text_layer_create(
         GRect(0, 50, bounds.size.w, 60));
@@ -57,35 +46,22 @@ static void main_window_load(Window *window)
 
     // Create the date TextLayer
     s_date_layer = text_layer_create(
-        GRect(0, 115, bounds.size.w, 25));
+        GRect(0, 105, bounds.size.w, 25));
     text_layer_set_background_color(s_date_layer, GColorBlack);
     text_layer_set_text_color(s_date_layer, GColorChromeYellow);
     text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
     text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
 
-    // Create the motto TextLayer - "For Sanguinius!"
-    s_motto_layer = text_layer_create(
-        GRect(0, 145, bounds.size.w, 20));
-    text_layer_set_background_color(s_motto_layer, GColorBlack);
-    text_layer_set_text_color(s_motto_layer, GColorRed);
-    text_layer_set_text(s_motto_layer, "For Sanguinius!");
-    text_layer_set_font(s_motto_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-    text_layer_set_text_alignment(s_motto_layer, GTextAlignmentCenter);
-
     // Add child layers to the Window's root layer
-    layer_add_child(window_layer, text_layer_get_layer(s_title_layer));
     layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
     layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
-    layer_add_child(window_layer, text_layer_get_layer(s_motto_layer));
 }
 
 static void main_window_unload(Window *window)
 {
     // Destroy TextLayers
     text_layer_destroy(s_time_layer);
-    text_layer_destroy(s_title_layer);
     text_layer_destroy(s_date_layer);
-    text_layer_destroy(s_motto_layer);
 }
 
 static void init()
