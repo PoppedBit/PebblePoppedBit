@@ -4,7 +4,7 @@
 
 ```
 ┌────────────────────────────────────┐
-│                                    │
+│                            85%     │  <- Battery % (top-right, white)
 │                                    │
 │                                    │
 │           12:45                    │  <- White text, large bold font
@@ -13,7 +13,7 @@
 │                                    │
 │                                    │
 │                                    │
-│                                    │
+│          3 texts                   │  <- Gold text, message indicator
 └────────────────────────────────────┘
      Black background (#000000)
 ```
@@ -39,8 +39,11 @@
 - Automatic time updates every minute
 - 12/24 hour format support (based on watch settings)
 - Date display with day name abbreviation
+- Battery percentage indicator (top-right)
+- Text message count indicator (bottom, shown only when messages exist)
 - Minimalist design for quick glanceability
 - Low power consumption (updates only when needed)
+- AppMessage integration for phone communication
 
 ## Compatibility
 - Pebble Classic (Aplite) - Black & White

@@ -9,6 +9,8 @@ This watchface features a clean, simple design with:
 - **Digital time display** in bold, easy-to-read format
 - **Minimalist color scheme**: White time, gold date on black background
 - **Date display**: Day and date below the time
+- **Battery indicator**: Shows battery percentage in the top-right corner
+- **Text message indicator**: Displays unread text message count at the bottom
 
 ## Design Elements
 
@@ -22,6 +24,8 @@ The watchface features:
 
 - 24-hour and 12-hour time format support
 - Automatic date updates
+- Battery percentage indicator (top-right corner)
+- Text message indicator (bottom) - shows unread message count
 - Compatible with multiple Pebble models (Aplite, Basalt, Chalk, Diorite, Emery)
 - Implemented in C for native performance
 - Minimalist, distraction-free design
@@ -50,5 +54,7 @@ The watchface uses:
 ## Files
 
 - `src/c/main.c` - C watch face implementation
+- `src/pkjs/index.js` - JavaScript companion app for phone communication
 - `appinfo.json` - Pebble app metadata
 - `wscript` - Build configuration
+- `TEXT_MESSAGE_INDICATOR.md` - Documentation for the text message feature

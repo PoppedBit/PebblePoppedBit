@@ -4,6 +4,7 @@ static Window *s_main_window;
 static TextLayer *s_time_layer;
 static TextLayer *s_date_layer;
 static TextLayer *s_battery_layer; // NEW:  Battery text layer
+static TextLayer *s_message_layer; // NEW: Text message indicator layer
 
 static void update_time()
 {
@@ -31,6 +32,49 @@ static void battery_callback(BatteryChargeState state)
     static char s_battery_buffer[8];
     snprintf(s_battery_buffer, sizeof(s_battery_buffer), "%d%%", state.charge_percent);
     text_layer_set_text(s_battery_layer, s_battery_buffer);
+}
+
+// NEW: Message count update handler
+static void update_message_display(int unread_count)
+{
+    static char s_message_buffer[32];
+    if (unread_count > 0) {
+        snprintf(s_message_buffer, sizeof(s_message_buffer), "%d text%s", 
+                 unread_count, unread_count == 1 ? "" : "s");
+    } else {
+        snprintf(s_message_buffer, sizeof(s_message_buffer), "");
+    }
+    text_layer_set_text(s_message_layer, s_message_buffer);
+}
+
+// NEW: AppMessage inbox received handler
+static void inbox_received_callback(DictionaryIterator *iterator, void *context)
+{
+    // Look for message count key
+    Tuple *message_count_tuple = dict_find(iterator, MESSAGE_KEY_MessageCount);
+    
+    if (message_count_tuple) {
+        int unread_count = message_count_tuple->value->int32;
+        update_message_display(unread_count);
+    }
+}
+
+// NEW: AppMessage inbox dropped handler
+static void inbox_dropped_callback(AppMessageResult reason, void *context)
+{
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
+}
+
+// NEW: AppMessage outbox failed handler
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context)
+{
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+// NEW: AppMessage outbox sent handler
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context)
+{
+    APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed)
@@ -70,10 +114,20 @@ static void main_window_load(Window *window)
     text_layer_set_text_alignment(s_battery_layer, GTextAlignmentRight);
     text_layer_set_text(s_battery_layer, "100%");
 
+    // NEW: Create the message indicator TextLayer (bottom)
+    s_message_layer = text_layer_create(
+        GRect(0, bounds.size.h - 25, bounds.size.w, 25));
+    text_layer_set_background_color(s_message_layer, GColorBlack);
+    text_layer_set_text_color(s_message_layer, GColorChromeYellow);
+    text_layer_set_font(s_message_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    text_layer_set_text_alignment(s_message_layer, GTextAlignmentCenter);
+    text_layer_set_text(s_message_layer, "");
+
     // Add child layers to the Window's root layer
     layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
     layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
     layer_add_child(window_layer, text_layer_get_layer(s_battery_layer)); // NEW
+    layer_add_child(window_layer, text_layer_get_layer(s_message_layer)); // NEW
 }
 
 static void main_window_unload(Window *window)
@@ -82,6 +136,7 @@ static void main_window_unload(Window *window)
     text_layer_destroy(s_time_layer);
     text_layer_destroy(s_date_layer);
     text_layer_destroy(s_battery_layer); // NEW
+    text_layer_destroy(s_message_layer); // NEW
 }
 
 static void init()
@@ -104,6 +159,20 @@ static void init()
     // NEW: Subscribe to battery service and display initial battery level
     battery_state_service_subscribe(battery_callback);
     battery_callback(battery_state_service_peek());
+
+    // NEW: Register AppMessage callbacks
+    app_message_register_inbox_received(inbox_received_callback);
+    app_message_register_inbox_dropped(inbox_dropped_callback);
+    app_message_register_outbox_failed(outbox_failed_callback);
+    app_message_register_outbox_sent(outbox_sent_callback);
+    
+    // Open AppMessage with inbox and outbox sizes
+    const int inbox_size = 128;
+    const int outbox_size = 128;
+    app_message_open(inbox_size, outbox_size);
+    
+    // Initialize message display with default value
+    update_message_display(0);
 
     // Register with TickTimerService
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);

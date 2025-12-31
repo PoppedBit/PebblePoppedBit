@@ -15,5 +15,8 @@
   "watchapp": {
     "watchface": true
   },
+  "appKeys": {
+    "MessageCount": 0
+  },
   "projectType": "native"
 }
