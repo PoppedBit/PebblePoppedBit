@@ -117,7 +117,7 @@ static void main_window_load(Window *window)
 
     // Create weather icon TextLayer (top-left corner)
     s_weather_icon_layer = text_layer_create(
-        GRect(5, 2, 30, 25));
+        GRect(5, 2, 30, 20));
     text_layer_set_background_color(s_weather_icon_layer, GColorBlack);
     text_layer_set_text_color(s_weather_icon_layer, GColorWhite);
     text_layer_set_font(s_weather_icon_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
@@ -126,7 +126,7 @@ static void main_window_load(Window *window)
 
     // Create weather temperature TextLayer (below icon)
     s_weather_temp_layer = text_layer_create(
-        GRect(5, 22, 60, 20));
+        GRect(5, 24, 60, 20));
     text_layer_set_background_color(s_weather_temp_layer, GColorBlack);
     text_layer_set_text_color(s_weather_temp_layer, GColorChromeYellow);
     text_layer_set_font(s_weather_temp_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
