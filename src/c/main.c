@@ -35,49 +35,6 @@ static void battery_callback(BatteryChargeState state)
     text_layer_set_text(s_battery_layer, s_battery_buffer);
 }
 
-// Weather helper: Convert Celsius to Fahrenheit
-static int celsius_to_fahrenheit(int celsius)
-{
-    return (celsius * 9 / 5) + 32;
-}
-
-// Weather helper: Map weather condition to text symbol
-static const char* weather_condition_to_symbol(WeatherConditionCode condition)
-{
-    switch (condition) {
-        case WeatherConditionClearSky:
-        case WeatherConditionFewClouds:
-            return "☀";
-        case WeatherConditionScatteredClouds:
-        case WeatherConditionBrokenClouds:
-        case WeatherConditionOvercastClouds:
-            return "☁";
-        case WeatherConditionShowerRain:
-        case WeatherConditionRain:
-        case WeatherConditionThunderstorm:
-            return "🌧";
-        case WeatherConditionSnow:
-            return "❄";
-        case WeatherConditionMist:
-        case WeatherConditionFog:
-            return "🌫";
-        default:
-            return "?";
-    }
-}
-
-// Weather update handler
-static void weather_callback(WeatherInfo *info)
-{
-    static char temp_buffer[8];
-    int temp_fahrenheit = celsius_to_fahrenheit(info->temp);
-    snprintf(temp_buffer, sizeof(temp_buffer), "%d°F", temp_fahrenheit);
-    text_layer_set_text(s_weather_temp_layer, temp_buffer);
-    
-    const char *icon = weather_condition_to_symbol(info->condition);
-    text_layer_set_text(s_weather_icon_layer, icon);
-}
-
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed)
 {
     update_time();
@@ -122,7 +79,7 @@ static void main_window_load(Window *window)
     text_layer_set_text_color(s_weather_icon_layer, GColorWhite);
     text_layer_set_font(s_weather_icon_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_text_alignment(s_weather_icon_layer, GTextAlignmentLeft);
-    text_layer_set_text(s_weather_icon_layer, "?");
+    text_layer_set_text(s_weather_icon_layer, "--");
 
     // Create weather temperature TextLayer (below icon)
     s_weather_temp_layer = text_layer_create(
@@ -172,14 +129,6 @@ static void init()
     battery_state_service_subscribe(battery_callback);
     battery_callback(battery_state_service_peek());
 
-    // Subscribe to WeatherService
-    weather_service_subscribe(weather_callback);
-    // Request initial weather update
-    WeatherInfo *initial_weather = weather_service_peek();
-    if (initial_weather) {
-        weather_callback(initial_weather);
-    }
-
     // Register with TickTimerService
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 }
@@ -191,9 +140,6 @@ static void deinit()
 
     // NEW: Unsubscribe from battery service
     battery_state_service_unsubscribe();
-
-    // Unsubscribe from weather service
-    weather_service_unsubscribe();
 
     // Destroy Window
     window_destroy(s_main_window);
