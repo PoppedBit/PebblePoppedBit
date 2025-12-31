@@ -33,9 +33,9 @@ function updateMessageCount() {
   
   console.log('Sending message count: ' + messageCount);
   
-  // Send message count to watch
+  // Send message count to watch using numeric key (must match appinfo.json appKeys)
   Pebble.sendAppMessage({
-    'MessageCount': messageCount
+    0: messageCount  // MessageCount key from appinfo.json
   }, function() {
     console.log('Message count sent successfully');
   }, function(e) {
