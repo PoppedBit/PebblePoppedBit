@@ -4,6 +4,8 @@ static Window *s_main_window;
 static TextLayer *s_time_layer;
 static TextLayer *s_date_layer;
 static TextLayer *s_battery_layer; // NEW:  Battery text layer
+static TextLayer *s_weather_temp_layer; // Weather temperature layer
+static TextLayer *s_weather_icon_layer; // Weather condition icon layer
 
 static void update_time()
 {
@@ -31,6 +33,49 @@ static void battery_callback(BatteryChargeState state)
     static char s_battery_buffer[8];
     snprintf(s_battery_buffer, sizeof(s_battery_buffer), "%d%%", state.charge_percent);
     text_layer_set_text(s_battery_layer, s_battery_buffer);
+}
+
+// Weather helper: Convert Celsius to Fahrenheit
+static int celsius_to_fahrenheit(int celsius)
+{
+    return (celsius * 9 / 5) + 32;
+}
+
+// Weather helper: Map weather condition to text symbol
+static const char* weather_condition_to_symbol(WeatherConditionCode condition)
+{
+    switch (condition) {
+        case WeatherConditionClearSky:
+        case WeatherConditionFewClouds:
+            return "☀";
+        case WeatherConditionScatteredClouds:
+        case WeatherConditionBrokenClouds:
+        case WeatherConditionOvercastClouds:
+            return "☁";
+        case WeatherConditionShowerRain:
+        case WeatherConditionRain:
+        case WeatherConditionThunderstorm:
+            return "🌧";
+        case WeatherConditionSnow:
+            return "❄";
+        case WeatherConditionMist:
+        case WeatherConditionFog:
+            return "🌫";
+        default:
+            return "?";
+    }
+}
+
+// Weather update handler
+static void weather_callback(WeatherInfo *info)
+{
+    static char temp_buffer[8];
+    int temp_fahrenheit = celsius_to_fahrenheit(info->temp);
+    snprintf(temp_buffer, sizeof(temp_buffer), "%d°F", temp_fahrenheit);
+    text_layer_set_text(s_weather_temp_layer, temp_buffer);
+    
+    const char *icon = weather_condition_to_symbol(info->condition);
+    text_layer_set_text(s_weather_icon_layer, icon);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed)
@@ -70,10 +115,30 @@ static void main_window_load(Window *window)
     text_layer_set_text_alignment(s_battery_layer, GTextAlignmentRight);
     text_layer_set_text(s_battery_layer, "100%");
 
+    // Create weather icon TextLayer (top-left corner)
+    s_weather_icon_layer = text_layer_create(
+        GRect(5, 2, 30, 25));
+    text_layer_set_background_color(s_weather_icon_layer, GColorBlack);
+    text_layer_set_text_color(s_weather_icon_layer, GColorWhite);
+    text_layer_set_font(s_weather_icon_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text_alignment(s_weather_icon_layer, GTextAlignmentLeft);
+    text_layer_set_text(s_weather_icon_layer, "?");
+
+    // Create weather temperature TextLayer (below icon)
+    s_weather_temp_layer = text_layer_create(
+        GRect(5, 22, 60, 20));
+    text_layer_set_background_color(s_weather_temp_layer, GColorBlack);
+    text_layer_set_text_color(s_weather_temp_layer, GColorChromeYellow);
+    text_layer_set_font(s_weather_temp_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    text_layer_set_text_alignment(s_weather_temp_layer, GTextAlignmentLeft);
+    text_layer_set_text(s_weather_temp_layer, "--°F");
+
     // Add child layers to the Window's root layer
     layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
     layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
     layer_add_child(window_layer, text_layer_get_layer(s_battery_layer)); // NEW
+    layer_add_child(window_layer, text_layer_get_layer(s_weather_icon_layer));
+    layer_add_child(window_layer, text_layer_get_layer(s_weather_temp_layer));
 }
 
 static void main_window_unload(Window *window)
@@ -82,6 +147,8 @@ static void main_window_unload(Window *window)
     text_layer_destroy(s_time_layer);
     text_layer_destroy(s_date_layer);
     text_layer_destroy(s_battery_layer); // NEW
+    text_layer_destroy(s_weather_icon_layer);
+    text_layer_destroy(s_weather_temp_layer);
 }
 
 static void init()
@@ -105,6 +172,14 @@ static void init()
     battery_state_service_subscribe(battery_callback);
     battery_callback(battery_state_service_peek());
 
+    // Subscribe to WeatherService
+    weather_service_subscribe(weather_callback);
+    // Request initial weather update
+    WeatherInfo *initial_weather = weather_service_peek();
+    if (initial_weather) {
+        weather_callback(initial_weather);
+    }
+
     // Register with TickTimerService
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 }
@@ -116,6 +191,9 @@ static void deinit()
 
     // NEW: Unsubscribe from battery service
     battery_state_service_unsubscribe();
+
+    // Unsubscribe from weather service
+    weather_service_unsubscribe();
 
     // Destroy Window
     window_destroy(s_main_window);
